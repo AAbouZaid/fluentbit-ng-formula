@@ -1,0 +1,5 @@
+# os_family vars.
+Debian:
+  pkg:
+    deps:
+      - apt-transport-https

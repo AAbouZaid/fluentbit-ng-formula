@@ -1,0 +1,40 @@
+Defaults:
+  pkg:
+    name           : td-agent-bit
+    version        : latest
+    deps           : []
+    prefixes       :
+      bin          : /opt
+      conf         : /etc
+  repo:
+    enabled        : True
+    baseurl        : https://packages.fluentbit.io/
+    key            : https://packages.fluentbit.io/fluentbit.key
+  service:
+    name           : td-agent-bit
+    systemd        :
+      dir          : /etc/systemd/system
+      extension    : .service
+      vars         :
+        restart              : always
+        restart_sec          : 90
+        start_limit_interval : 400
+        start_limit_burst    : 3
+    upstart        :
+      dir          : /etc/init
+      extension    : .conf
+  config:
+    indent         : 4
+    service        :
+      flush        : 5
+      daemon       : 'Off'
+      logfile      : ""
+      log_level    : info
+      parsers_file :
+        - parsers.conf
+    sections       :
+      parser       : {}
+      input        : {}
+      filter       : {}
+      output       : {}
+    include        : []
