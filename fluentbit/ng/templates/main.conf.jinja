@@ -1,0 +1,9 @@
+{%- import "fluentbit/macros.jinja" as macros -%}
+{{ macros.format_section(section, element, indent) }}
+
+# Includes.
+# The @INCLUDE command only works at top-left level of this configuration file,
+# it cannot be used inside sections.
+{%- for conf in include if include %}
+@INCLUDE {{ conf }}
+{%- endfor -%}
