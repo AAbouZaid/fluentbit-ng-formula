@@ -1,0 +1,103 @@
+{% import_yaml 'fluentbit/defaults.yaml' as defaultmap %}
+{% import_yaml 'fluentbit/osfamilymap.yaml' as osfamilymap %}
+
+#
+# Default vars.
+#
+
+# General defaults.
+{% set defaults = salt['grains.filter_by'](
+    defaultmap,
+    base='Defaults',
+) %}
+
+# Update defaults with grains vars.
+{% set grains_vars = [
+    ("os_family", osfamilymap),
+] %}
+
+{% for map_name, map_value in grains_vars %}
+    {% do salt['defaults.merge'](defaults,
+        salt['grains.filter_by'](
+            map_value,
+            grain=map_name,
+        ) | default({}, True)
+    ) %}
+{% endfor %}
+
+# Finally, merge with pillar.
+{% set fluentbit = salt['pillar.get'](
+    'fluentbit',
+    default=defaults,
+    merge=True,
+) %}
+
+#
+# Dynamic vars.
+#
+
+#
+# Repo name based on os family.
+{% if grains['os_family'] == 'Debian' %}
+    {% set repo_name = "deb %(baseurl)s/%(osname)s/%(oscodename)s %(oscodename)s main" % {
+        'baseurl'    : fluentbit.repo.baseurl,
+        'osname'     : salt['grains.get']('os') | lower,
+        'oscodename' : salt['grains.get']('oscodename') | lower
+    } %}
+    {% set repo_file = "/etc/apt/sources.list.d/%s.list" % fluentbit.pkg.name %}
+
+{% elif grains['os_family'] == 'RedHat' %}
+    {% set repo_name = "%(baseurl)s/%(osname)s/%(osmajorrelease)s" % {
+        'baseurl'        : fluentbit.repo.baseurl,
+        'osname'         : salt['grains.get']('os') | lower,
+        'osmajorrelease' : salt['grains.get']('osmajorrelease')
+    } %}
+    {% set repo_file = "/etc/yum.repos.d/%s.list" % fluentbit.pkg.name %}
+
+{% endif %}
+
+#
+# More dynamic vars.
+{% do salt['defaults.merge'](fluentbit, {
+    'pkg': {
+        'dirs': {
+          'conf': "%s/%s" % (fluentbit.pkg.prefixes.conf, fluentbit.pkg.name),
+          'bin': "%s/%s/bin" % (fluentbit.pkg.prefixes.bin, fluentbit.pkg.name)
+        }
+    },
+    'repo': {
+        'name': repo_name,
+        'file': repo_file
+    }
+}) %}
+
+#
+# Add parsers files dynamically.
+{% for parser in fluentbit.config.sections.parser.keys() %}
+    {% do fluentbit.config.service.parsers_file.append("parser.d/%s.conf" % parser) %}
+{% endfor %}
+
+#
+# Add sections files dynamically.
+{% for section_name, section_conf in fluentbit.config.sections.items() %}
+    {% if section_conf and section_name != 'parser' %}
+        {% do fluentbit.config.include.append("%s.d/*.conf" % section_name) %}
+    {% endif %}
+{% endfor %}
+
+#
+# Add service conf based on system init grain.
+{% do salt['defaults.merge'](fluentbit, {
+    'service': {
+        'config': fluentbit.service[salt['grains.get']('init')]
+    }
+}) %}
+{% do salt['defaults.merge'](fluentbit, {
+    'service': {
+        'file': "%s/%s%s" % (
+            fluentbit.service.config.dir,
+            fluentbit.pkg.name,
+            fluentbit.service.config.extension,
+        )
+    }
+}) %}

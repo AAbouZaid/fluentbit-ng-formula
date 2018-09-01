@@ -1,0 +1,47 @@
+# Make capitalized snake case.
+# So `foo_bar` in YAML will be `Foo_Bar` in Fluent Bit config.
+# This is the style used in Fluent Bit config keys.
+{%- macro capitalized_snake_case(key, separator="_") -%}
+    {%- set key_cap_snake_case = key.split(separator) | map('capitalize') | join(separator) -%}
+    {{ key_cap_snake_case }}
+{%- endmacro -%}
+
+# Add exter space to keep values aligend based on max key length + 1.
+{%- macro format_key(key, max_keys_len, indent) -%}
+    {%- set indent = " " * indent -%}
+    {%- set outdent = " " * (max_keys_len - key | length) -%}
+    {{ indent }}{{ capitalized_snake_case(key) }}{{ outdent }}
+{%- endmacro -%}
+
+# In case the value is a list, where more than 1 key could be used like `Parsers_File`.
+{%- macro format_list_value(key, value) -%}
+    {%- for item in value -%}
+        {{ "%s %s\n" % (key, item) }}
+    {%- endfor -%}
+{%- endmacro -%}
+
+# Format entries, the key/value under each section.
+{%- macro format_entries(element_conf, indent) -%}
+    {%- set max_keys_len = element_conf.keys() | map("length") | max -%}
+
+    {%- for raw_key, value in element_conf.items() -%}
+        {%- set key = format_key(raw_key, max_keys_len, indent) -%}
+
+        {%- if value | is_list -%}
+            {{ format_list_value(key, value) }}
+        {%- elif value -%}
+            {{ key }} {{ value }}{%- if not loop.last -%}{{ "\n" }}{%- endif -%}
+        {%- endif -%}
+
+    {%- endfor -%}
+{%- endmacro -%}
+
+# Format the final conf section.
+# Output exmaple:
+# [INPUT]
+#     Key1        some value
+#     Another_Key another value
+{%- macro format_section(section_name, element, entries_indent=4) -%}
+    {{ "[%s]\n" % section_name | upper }}
+    {{- format_entries(element.conf, entries_indent) }}
+{%- endmacro -%}
