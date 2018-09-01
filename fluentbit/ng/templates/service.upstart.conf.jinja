@@ -1,0 +1,15 @@
+description "Fluent Bit log collection service"
+
+start on started network-services
+stop on runlevel [!2345]
+setgid nogroup
+
+# Set reasonable file limits
+limit nofile 65536 65536
+
+# Restart automatically on crash
+respawn
+
+console log
+
+exec {{ exec_file }} -c {{ conf_file }}

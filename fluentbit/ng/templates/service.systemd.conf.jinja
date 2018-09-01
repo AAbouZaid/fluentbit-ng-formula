@@ -1,0 +1,16 @@
+[Unit]
+Description=Fluent Bit
+Requires=network.target
+After=network.target
+
+[Service]
+Type=simple
+ExecStart={{ exec_file }} -c {{ conf_file }}
+SyslogIdentifier={{ service_name }}
+Restart={{ vars.restart }}
+RestartSec={{ vars.restart_sec }}
+StartLimitInterval={{ vars.start_limit_interval }}
+StartLimitBurst={{ vars.start_limit_burst }}
+
+[Install]
+WantedBy=multi-user.target
