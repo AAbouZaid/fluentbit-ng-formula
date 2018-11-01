@@ -16,6 +16,7 @@
 {{ sls }}~up_and_running:
   service.running:
     - name: {{ fluentbit.service.name }}
+    - enable: True
     - require:
       - pkg: {{ slspath }}.install~system_package
       - file: {{ sls }}~config_file
