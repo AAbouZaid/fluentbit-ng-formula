@@ -13,6 +13,12 @@
     - require:
       - pkg: {{ slspath }}.install~system_package
 
+{% if grains.init == 'systemd' %}
+{{ sls }}~systemctl_reload:
+  module.run:
+    - service.systemctl_reload
+{% endif %}
+
 {{ sls }}~up_and_running:
   service.running:
     - name: {{ fluentbit.service.name }}
