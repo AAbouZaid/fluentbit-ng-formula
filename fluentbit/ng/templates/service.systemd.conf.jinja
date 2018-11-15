@@ -7,10 +7,11 @@ After=network.target
 Type=simple
 ExecStart={{ exec_file }} -c {{ conf_file }}
 SyslogIdentifier={{ service_name }}
-Restart={{ vars.restart }}
-RestartSec={{ vars.restart_sec }}
-StartLimitInterval={{ vars.start_limit_interval }}
-StartLimitBurst={{ vars.start_limit_burst }}
+
+# Service vars.
+{%- for key, val in vars.items() %}
+{{ key }}={{ val }}
+{%- endfor %}
 
 [Install]
 WantedBy=multi-user.target

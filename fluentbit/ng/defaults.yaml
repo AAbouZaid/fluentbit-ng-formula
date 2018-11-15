@@ -16,10 +16,12 @@ Defaults:
       dir          : /etc/systemd/system
       extension    : .service
       vars         :
-        restart              : always
-        restart_sec          : 90
-        start_limit_interval : 400
-        start_limit_burst    : 3
+        StandardOutput     : 'null'
+        StandardError      : 'null'
+        Restart            : always
+        RestartSec         : 90
+        StartLimitInterval : 400
+        StartLimitBurst    : 3
     upstart        :
       dir          : /etc/init
       extension    : .conf
